@@ -16,6 +16,7 @@ public class Connection implements AutoCloseable {
         output = new ObjectOutputStream(socket.getOutputStream());
         input = new ObjectInputStream(socket.getInputStream());
     }
+
     public String getSender() {
         return sender;
     }

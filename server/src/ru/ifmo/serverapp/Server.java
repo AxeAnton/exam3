@@ -1,43 +1,43 @@
 package ru.ifmo.serverapp;
 
-
 import ru.ifmo.lib.Connection;
 import ru.ifmo.lib.Message;
-
-import java.io.EOFException;
 import java.io.IOException;
+import java.io.EOFException;
+import java.net.SocketException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 
 public class Server {
     private final int port;
     private final List<Connection> connections = new ArrayList<>();
-    private final ArrayBlockingQueue<Message> queue = new ArrayBlockingQueue<>(30,true);
+    private final ArrayBlockingQueue<Message> arrQueue = new ArrayBlockingQueue<>(30,true);
+
+
 
     public Server(int port) {
         this.port = port;
     }
     public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
+        try (ServerSocket ipSocket = new ServerSocket(port)) {
             System.out.println("Сервер запущен");
-            new Thread(new Sender(connections, queue), "Sender").start();
+            new Thread(new Sender(connections, arrQueue), "Sender").start();
             while (true) {
-                Socket newClient = serverSocket.accept();
+                Socket newClient = ipSocket.accept();
                 Connection connection = new Connection(newClient);
                 connections.add(connection);
-                new Thread(new Reciever(connection)).start();
+                new Thread(new Accepter(connection)).start();
             }
         } catch (IOException e) {
             System.out.println("Ошибка "+e);
         }
     }
-    private class Reciever implements Runnable {
+    private class Accepter implements Runnable {
         private final Connection connection;
-        public Reciever(Connection connection) {
+        public Accepter(Connection connection) {
             this.connection = connection;
         }
 
@@ -48,7 +48,7 @@ public class Server {
                     Message message = connection.readMessage();
                     if (!message.getText().isEmpty()) {
                         try {
-                            queue.put(message);
+                            arrQueue.put(message);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -64,13 +64,13 @@ public class Server {
             }
         }
     }
+
     private static class Sender implements Runnable {
         private final List<Connection> connections;
-        private final ArrayBlockingQueue<Message> queue;
-
-        public Sender(List<Connection> connections, ArrayBlockingQueue<Message> queue) {
+        private final ArrayBlockingQueue<Message> arrQueue;
+        public Sender(List<Connection> connections, ArrayBlockingQueue<Message> arrQueue) {
             this.connections = connections;
-            this.queue = queue;
+            this.arrQueue = arrQueue;
         }
         @Override
         public void run() {
@@ -78,7 +78,7 @@ public class Server {
                 try {
                     Message message = null;
                     try {
-                        message = queue.take();
+                        message = arrQueue.take();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

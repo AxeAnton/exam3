@@ -23,15 +23,11 @@ public class Message implements Serializable {
         return text;
     }
 
-/*    public LocalDateTime getDateTime() {
-        return dateTime;
-    }*/
-
     public void setDateTime() {
         this.dateTime = LocalDateTime.now();
     }
 
-    public static Message getInstance(String sender, String text) {
+    public static Message getMessage(String sender, String text) {
 
         return new Message(sender, text);
     }
